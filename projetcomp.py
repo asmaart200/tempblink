@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import requests
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple
 
@@ -55,12 +56,19 @@ PALETTES_COUVERTURE = {
 
 # --- LISTE DES VILLES ---
 CITIES = {
-    "Casablanca, Maroc": (33.5731, -7.5898),
     "Paris, France": (48.8566, 2.3522),
-    "Tokyo, Japon": (35.6895, 139.6917),
-    "New York, USA": (40.7128, -74.0060),
+    "Londres, UK": (51.5074, -0.1278),
+    "Madrid, Espagne": (40.4168, -3.7038),
     "Berlin, Allemagne": (52.5200, 13.4050),
-    "Sydney, Australie": (-33.8688, 151.2093)
+    "Rome, Italie": (41.9028, 12.4964),
+    "Amsterdam, Pays-Bas": (52.3676, 4.9041),
+    "Bruxelles, Belgique": (50.8503, 4.3517),
+    "Lisbonne, Portugal": (38.7223, -9.1393),
+    "Stockholm, Suède": (59.3293, 18.0686),
+    "Moscou, Russie": (55.7558, 37.6173),
+    "Casablanca, Maroc": (33.5731, -7.5898),
+    "Tunis, Tunisie": (36.8065, 10.1815),
+    "Alger, Algérie": (36.7372, 3.0869)
 }
 
 def get_color_for_temperature(temp: float, palette_colors: List[str], min_temp: float = -20, max_temp: float = 40) -> Tuple[str, str]:
@@ -78,10 +86,15 @@ def get_color_for_temperature(temp: float, palette_colors: List[str], min_temp: 
 
 # --- Fonction pour récupérer les données depuis l'API Open-Meteo ---
 @st.cache_data(show_spinner=True)
-def get_real_temperature_data(lat, lon, year, temp_type):
+def get_real_temperature_data(lat: float, lon: float, year: int, temp_type: str) -> pd.DataFrame:
+    """
+    Récupère les données de température réelles depuis l'API Open-Meteo
+    """
     start_date = f"{year}-01-01"
     end_date = f"{year}-12-31"
-    daily = {
+    
+    # Mapping des types de température
+    daily_param = {
         "min": "temperature_2m_min",
         "max": "temperature_2m_max",
         "moyenne": "temperature_2m_mean"
@@ -90,20 +103,37 @@ def get_real_temperature_data(lat, lon, year, temp_type):
     url = (
         "https://archive-api.open-meteo.com/v1/archive?"
         f"latitude={lat}&longitude={lon}&start_date={start_date}&end_date={end_date}"
-        f"&daily={daily}&timezone=auto"
+        f"&daily={daily_param}&timezone=auto"
     )
 
-    response = requests.get(url)
-    if response.status_code == 200:
-        json_data = response.json()
-        return pd.DataFrame({
-            "date": pd.to_datetime(json_data["daily"]["time"]),
-            "temperature": json_data["daily"][daily]
-        })
-    else:
-        st.error("Erreur lors de la récupération des données météo.")
-        return pd.DataFrame(columns=["date", "temperature"])
- # Générer les données pour l'année
+    try:
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            json_data = response.json()
+            return pd.DataFrame({
+                "date": pd.to_datetime(json_data["daily"]["time"]),
+                "temperature": json_data["daily"][daily_param]
+            })
+        else:
+            st.error(f"Erreur API: {response.status_code}")
+            return generate_fallback_data(year, temp_type)
+    except Exception as e:
+        st.warning(f"Erreur réseau: {e}. Utilisation de données simulées.")
+        return generate_fallback_data(year, temp_type)
+
+def generate_fallback_data(year: int, temp_type: str) -> pd.DataFrame:
+    """
+    Génère des données de température simulées en cas d'échec de l'API
+    """
+    # Températures de base par saison (approximatives pour l'Europe)
+    base_temps = {
+        "winter": 2,
+        "spring": 12,
+        "summer": 22,
+        "autumn": 15
+    }
+    
+    # Générer les données pour l'année
     start_date = datetime(year, 1, 1)
     end_date = datetime(year, 12, 31)
     
@@ -155,7 +185,6 @@ def generate_temperature_data(city: str, year: int, temp_type: str) -> pd.DataFr
     lat, lon = CITIES[city]
     return get_real_temperature_data(lat, lon, year, temp_type)
 
-
 def page_configuration():
     """
     Page de configuration du projet
@@ -171,18 +200,14 @@ def page_configuration():
     with col1:
         st.subheader("🏙️ Localisation")
         
-        # Liste des villes
-        cities = [
-            "Paris", "Londres", "Madrid", "Berlin", "Rome", 
-            "Amsterdam", "Bruxelles", "Lisbonne", "Stockholm", 
-            "Moscou", "Casablanca", "Tunis", "Alger"
-        ]
+        # Liste des villes avec les noms complets
+        cities = list(CITIES.keys())
         
         selected_city = st.selectbox("Choisir une ville:", cities)
         
         # Choix de l'année
         current_year = datetime.now().year
-        years = list(range(current_year - 5, current_year + 1))
+        years = list(range(2020, current_year + 1))
         selected_year = st.selectbox("Choisir l'année:", years, index=len(years)-1)
         
         # Type de température
@@ -230,6 +255,10 @@ def page_configuration():
         with st.spinner("Génération des données de température..."):
             # Générer les données
             df = generate_temperature_data(selected_city, selected_year, temp_type)
+            
+            if df.empty:
+                st.error("Impossible de générer les données. Veuillez réessayer.")
+                return
             
             # Sauvegarder dans la session
             st.session_state.project_data = {
@@ -464,7 +493,7 @@ def page_project():
             st.download_button(
                 label="📥 Télécharger CSV",
                 data=csv,
-                file_name=f"couverture_{project['city']}_{project['year']}.csv",
+                file_name=f"couverture_{project['city'].replace(', ', '_')}_{project['year']}.csv",
                 mime="text/csv"
             )
     
