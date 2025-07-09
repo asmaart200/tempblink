@@ -474,6 +474,7 @@ def page_project():
             
             # Grouper par mois
             df_copy = df.copy()
+            df_copy['date'] = pd.to_datetime(df_copy['date'], errors='coerce')
             df_copy['month'] = df_copy['date'].dt.month
             df_copy['month_name'] = df_copy['date'].dt.strftime('%B')
             
