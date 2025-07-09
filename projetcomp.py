@@ -107,24 +107,48 @@ def get_real_temperature_data(lat: float, lon: float, year: int, temp_type: str)
     )
 
     try:
-        response = requests.get(url, timeout=10)
+        st.info(f"Récupération des données pour {lat}, {lon} en {year}...")
+        response = requests.get(url, timeout=15)
+        
         if response.status_code == 200:
             json_data = response.json()
-            return pd.DataFrame({
-                "date": pd.to_datetime(json_data["daily"]["time"]),
-                "temperature": json_data["daily"][daily_param]
-            })
+            
+            # Vérifier si les données sont présentes
+            if "daily" in json_data and "time" in json_data["daily"] and daily_param in json_data["daily"]:
+                df = pd.DataFrame({
+                    "date": pd.to_datetime(json_data["daily"]["time"]),
+                    "temperature": json_data["daily"][daily_param]
+                })
+                
+                # Filtrer les valeurs nulles
+                df = df.dropna()
+                
+                if not df.empty:
+                    st.success(f"Données récupérées avec succès! {len(df)} jours de données.")
+                    return df
+                else:
+                    st.warning("Données vides récupérées de l'API. Utilisation de données simulées.")
+                    return generate_fallback_data(year, temp_type)
+            else:
+                st.warning("Structure de données inattendue de l'API. Utilisation de données simulées.")
+                return generate_fallback_data(year, temp_type)
         else:
-            st.error(f"Erreur API: {response.status_code}")
+            st.error(f"Erreur API: {response.status_code}. Utilisation de données simulées.")
             return generate_fallback_data(year, temp_type)
-    except Exception as e:
+            
+    except requests.exceptions.RequestException as e:
         st.warning(f"Erreur réseau: {e}. Utilisation de données simulées.")
+        return generate_fallback_data(year, temp_type)
+    except Exception as e:
+        st.error(f"Erreur inattendue: {e}. Utilisation de données simulées.")
         return generate_fallback_data(year, temp_type)
 
 def generate_fallback_data(year: int, temp_type: str) -> pd.DataFrame:
     """
     Génère des données de température simulées en cas d'échec de l'API
     """
+    st.info("Génération de données de température simulées...")
+    
     # Températures de base par saison (approximatives pour l'Europe)
     base_temps = {
         "winter": 2,
@@ -154,6 +178,7 @@ def generate_fallback_data(year: int, temp_type: str) -> pd.DataFrame:
             season_temp = base_temps["autumn"]
         
         # Ajouter de la variation
+        np.random.seed(current_date.timetuple().tm_yday + year)  # Reproductibilité
         daily_variation = np.random.normal(0, 3)
         seasonal_variation = np.sin((current_date.timetuple().tm_yday / 365) * 2 * np.pi) * 5
         
@@ -169,21 +194,34 @@ def generate_fallback_data(year: int, temp_type: str) -> pd.DataFrame:
         
         current_date += timedelta(days=1)
     
-    return pd.DataFrame({
+    df = pd.DataFrame({
         'date': dates,
         'temperature': temperatures
     })
+    
+    st.success(f"Données simulées générées avec succès! {len(df)} jours de données.")
+    return df
 
 def generate_temperature_data(city: str, year: int, temp_type: str) -> pd.DataFrame:
     """
     Récupère les données réelles de température pour une ville donnée
     """
     if city not in CITIES:
-        st.error("Ville non prise en charge.")
+        st.error(f"Ville '{city}' non prise en charge.")
         return pd.DataFrame(columns=["date", "temperature"])
     
     lat, lon = CITIES[city]
-    return get_real_temperature_data(lat, lon, year, temp_type)
+    st.info(f"Récupération des données pour {city} ({lat}, {lon})")
+    
+    # Essayer d'abord avec l'API réelle
+    df = get_real_temperature_data(lat, lon, year, temp_type)
+    
+    # Si les données sont vides, utiliser le fallback
+    if df.empty:
+        st.warning("Données API vides, génération de données simulées...")
+        df = generate_fallback_data(year, temp_type)
+    
+    return df
 
 def page_configuration():
     """
@@ -253,26 +291,43 @@ def page_configuration():
     # Bouton pour générer le projet
     if st.button("🚀 Générer mon projet de couverture", type="primary", use_container_width=True):
         with st.spinner("Génération des données de température..."):
-            # Générer les données
-            df = generate_temperature_data(selected_city, selected_year, temp_type)
-            
-            if df.empty:
-                st.error("Impossible de générer les données. Veuillez réessayer.")
-                return
-            
-            # Sauvegarder dans la session
-            st.session_state.project_data = {
-                'city': selected_city,
-                'year': selected_year,
-                'temp_type': temp_type,
-                'palette': selected_palette,
-                'data': df
-            }
-            st.session_state.selected_palette = selected_palette
-            st.session_state.current_page = 'project'
-            
-            st.success("Projet généré avec succès!")
-            st.rerun()
+            try:
+                # Générer les données
+                df = generate_temperature_data(selected_city, selected_year, temp_type)
+                
+                if df.empty:
+                    st.error("Impossible de générer les données. Veuillez réessayer.")
+                    return
+                
+                # Afficher un échantillon des données pour debug
+                st.success(f"✅ Données générées avec succès! {len(df)} jours de données.")
+                
+                # Afficher les premières lignes pour vérification
+                with st.expander("Aperçu des données générées"):
+                    st.dataframe(df.head(10))
+                    st.write(f"Température min: {df['temperature'].min():.1f}°C")
+                    st.write(f"Température max: {df['temperature'].max():.1f}°C")
+                    st.write(f"Température moyenne: {df['temperature'].mean():.1f}°C")
+                
+                # Sauvegarder dans la session
+                st.session_state.project_data = {
+                    'city': selected_city,
+                    'year': selected_year,
+                    'temp_type': temp_type,
+                    'palette': selected_palette,
+                    'data': df
+                }
+                st.session_state.selected_palette = selected_palette
+                st.session_state.current_page = 'project'
+                
+                # Attendre un peu avant de changer de page
+                import time
+                time.sleep(1)
+                st.rerun()
+                
+            except Exception as e:
+                st.error(f"Erreur lors de la génération: {str(e)}")
+                st.info("Essayez de changer d'année ou de ville.")
 
 def page_project():
     """
@@ -554,3 +609,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
