@@ -907,9 +907,9 @@ def page_project():
                 colors_html += f'''
                     <div style="
                         background-color: {color};
-                        height: 5px;
+                        height: 3px;
                         width: 100%;
-                        margin-bottom: 1px;
+                        margin-bottom: 0px;
                         border-radius: 4px;">
                     </div>
                 '''
