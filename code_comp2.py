@@ -854,7 +854,7 @@ def page_project():
     
     # Boutons d'action
     st.markdown("---")
-    col1, col2, col3 = st.columns(1,1,2)
+    col1, col2, col3 = st.columns([1,1,3])
     
     with col1:
         if st.button("🔄 Réinitialiser progression", type="secondary"):
