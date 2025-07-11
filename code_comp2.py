@@ -891,37 +891,29 @@ def page_project():
                 mime="text/csv"
             )
     
-    with col3:
-        if st.button("🎨 Aperçu simple", type="secondary"):
-            st.subheader("👀 Aperçu couleurs par mois")
-            
-            # Copier le DataFrame
-            df_copy = df.copy()
-            df_copy['date'] = pd.to_datetime(df_copy['date'], errors='coerce')
-            df_copy['month'] = df_copy['date'].dt.month
-            df_copy['month_name'] = df_copy['date'].dt.strftime('%B')
-            
-            for month in range(1, 13):
-                month_data = df_copy[df_copy['month'] == month]
-                if not month_data.empty:
-                    month_name = month_data.iloc[0]['month_name']
-                    st.write(f"**{month_name}**")
-                    
-                    colors_html = ""
-                    for _, row in month_data.iterrows():
-                        color, _ = get_color_for_temperature(row['temperature'], palette_info['colors'])
-                        # Une ligne horizontale pleine
-                        colors_html += f'''
-                            <div style="
-                                background-color: {color};
-                                height: 1px;
-                                width: 100%;
-                                margin-bottom: 1px;
-                                border-radius: 4px;">
-                            </div>
-                        '''
-                    # Afficher les lignes
-                    st.markdown(colors_html, unsafe_allow_html=True)
+    if st.button("🎨 Aperçu simple", type="secondary"):
+    st.subheader("👀 Aperçu couleurs continues (par jour)")
+
+    df_copy = df.copy()
+    df_copy['date'] = pd.to_datetime(df_copy['date'], errors='coerce')
+    df_copy = df_copy.sort_values('date')  # Pour garder l’ordre chronologique
+
+    colors_html = ""
+    for _, row in df_copy.iterrows():
+        color, _ = get_color_for_temperature(row['temperature'], palette_info['colors'])
+
+        colors_html += f'''
+            <div style="
+                background-color: {color};
+                height: 15px;
+                width: 100%;
+                margin-bottom: 2px;
+                border-radius: 4px;">
+            </div>
+        '''
+
+    st.markdown(colors_html, unsafe_allow_html=True)
+
 
 # Interface principale
 def main():
