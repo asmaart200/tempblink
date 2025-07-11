@@ -890,31 +890,32 @@ def page_project():
                 file_name=f"couverture_{project['city'].replace(', ', '_')}_{project['year']}.csv",
                 mime="text/csv"
             )
+    with col3:
+        if st.button("🎨 Aperçu simple", type="secondary"):
+            st.subheader("👀 Aperçu couleurs continues (un jour = une ligne)")
     
-    if st.button("🎨 Aperçu simple", type="secondary"):
-    st.subheader("👀 Aperçu couleurs continues (par jour)")
-
-    df_copy = df.copy()
-    df_copy['date'] = pd.to_datetime(df_copy['date'], errors='coerce')
-    df_copy = df_copy.sort_values('date')  # Pour garder l’ordre chronologique
-
-    colors_html = ""
-    for _, row in df_copy.iterrows():
-        color, _ = get_color_for_temperature(row['temperature'], palette_info['colors'])
-
-        colors_html += f'''
-            <div style="
-                background-color: {color};
-                height: 15px;
-                width: 100%;
-                margin-bottom: 2px;
-                border-radius: 4px;">
-            </div>
-        '''
-
-    st.markdown(colors_html, unsafe_allow_html=True)
-
-
+            # Copier et trier le DataFrame
+            df_copy = df.copy()
+            df_copy['date'] = pd.to_datetime(df_copy['date'], errors='coerce')
+            df_copy = df_copy.sort_values('date')
+    
+            # Construire la bande de couleurs
+            colors_html = ""
+            for _, row in df_copy.iterrows():
+                color, _ = get_color_for_temperature(row['temperature'], palette_info['colors'])
+    
+                colors_html += f'''
+                    <div style="
+                        background-color: {color};
+                        height: 15px;
+                        width: 100%;
+                        margin-bottom: 2px;
+                        border-radius: 4px;">
+                    </div>
+                '''
+    
+            st.markdown(colors_html, unsafe_allow_html=True)
+    
 # Interface principale
 def main():
     # Sidebar avec informations
