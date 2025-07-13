@@ -1574,7 +1574,7 @@ def page_project():
     col1, col2 = st.columns([1,4])
     
     with col1:
-        if st.button("📊 Préparer export", type="secondary"):
+        if st.button(" 📊 Préparer export ", type="secondary"):
             # Créer les données pour l'export
             export_data = []
             for idx, row in df.iterrows():
