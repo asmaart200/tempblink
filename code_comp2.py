@@ -1506,7 +1506,7 @@ def page_project():
 
     # Boutons d'action
     st.markdown("---")
-    col1, col2 = st.columns([1,3])
+    col1, col2 = st.columns([1,4])
     
     with col1:
         if st.button("📊 Préparer export", type="secondary"):
@@ -1536,6 +1536,7 @@ def page_project():
                 file_name=f"couverture_{project['city'].replace(', ', '_')}_{project['year']}.csv",
                 mime="text/csv"
             )
+            
         if st.button("🔄 Réinitialiser progression", type="secondary"):
             st.session_state.progress_data = {}
             st.success("Progression réinitialisée!")
