@@ -407,7 +407,7 @@ CITIES = {
     "Waterford, Ireland": (52.2593, -7.1101),
     "Drogheda, Ireland": (53.7189, -6.3478),
     "Swords, Ireland": (53.4597, -6.2179),
-    "Dundalk, Ireland": (54.0014, -6.4058)
+    "Dundalk, Ireland": (54.0014, -6.4058),
 
     # Asie
     "Tokyo, Japan": (35.6762, 139.6503),
