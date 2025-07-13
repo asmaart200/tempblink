@@ -51,209 +51,72 @@ PALETTES_COUVERTURE = {
         "colors": ["#880E4F", "#AD1457", "#C2185B", "#E91E63", "#EC407A", "#F48FB1", "#F8BBD9", "#FCE4EC"],
         "description": "Roses tendres du printemps",
         "yarn_colors": ["Rose Bordeaux", "Rose Foncé", "Rose Cerise", "Rose Vif", "Rose Bonbon", "Rose Poudré", "Rose Pâle", "Rose Nacré"]
+    },
+    # Palette personnalisable - vous pouvez la modifier
+    "Palette Personnalisée": {
+        "colors": ["#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF"],
+        "description": "Modifiez cette palette selon vos goûts",
+        "yarn_colors": ["Couleur 1", "Couleur 2", "Couleur 3", "Couleur 4", "Couleur 5", "Couleur 6", "Couleur 7", "Couleur 8"]
     }
 }
 
-class PaletteManager:
-    def __init__(self):
-        self.palettes = PALETTES_COUVERTURE.copy()
-        self.custom_palettes = {}
+# Fonctions simples pour personnaliser
+def ajouter_palette(nom, couleurs, description="", noms_laines=None):
+    """Ajoute une nouvelle palette"""
+    if noms_laines is None:
+        noms_laines = [f"Couleur {i+1}" for i in range(len(couleurs))]
     
-    def ajouter_palette_personnalisee(self, nom, colors, description, yarn_colors=None):
-        """
-        Ajoute une palette personnalisée
-        
-        Args:
-            nom (str): Nom de la palette
-            colors (list): Liste des codes couleur hex
-            description (str): Description de la palette
-            yarn_colors (list, optional): Noms des couleurs de laine correspondantes
-        """
-        if yarn_colors is None:
-            yarn_colors = [f"Couleur {i+1}" for i in range(len(colors))]
-        
-        if len(colors) != len(yarn_colors):
-            raise ValueError("Le nombre de couleurs doit correspondre au nombre de noms de laine")
-        
-        self.custom_palettes[nom] = {
-            "colors": colors,
-            "description": description,
-            "yarn_colors": yarn_colors,
-            "type": "personnalisée"
-        }
-        
-        print(f"Palette '{nom}' ajoutée avec succès!")
-    
-    def modifier_palette_existante(self, nom, nouveau_nom=None, colors=None, description=None, yarn_colors=None):
-        """
-        Modifie une palette existante
-        """
-        if nom in self.palettes:
-            palette = self.palettes[nom]
-        elif nom in self.custom_palettes:
-            palette = self.custom_palettes[nom]
-        else:
-            raise ValueError(f"Palette '{nom}' non trouvée")
-        
-        if colors is not None:
-            palette["colors"] = colors
-        if description is not None:
-            palette["description"] = description
-        if yarn_colors is not None:
-            palette["yarn_colors"] = yarn_colors
-        
-        if nouveau_nom and nouveau_nom != nom:
-            if nom in self.custom_palettes:
-                self.custom_palettes[nouveau_nom] = self.custom_palettes.pop(nom)
-            else:
-                self.custom_palettes[nouveau_nom] = self.palettes[nom].copy()
-                self.custom_palettes[nouveau_nom]["type"] = "personnalisée"
-        
-        print(f"Palette modifiée avec succès!")
-    
-    def supprimer_palette_personnalisee(self, nom):
-        """
-        Supprime une palette personnalisée
-        """
-        if nom in self.custom_palettes:
-            del self.custom_palettes[nom]
-            print(f"Palette '{nom}' supprimée avec succès!")
-        else:
-            print(f"Palette '{nom}' non trouvée dans les palettes personnalisées")
-    
-    def obtenir_toutes_palettes(self):
-        """
-        Retourne toutes les palettes (prédéfinies + personnalisées)
-        """
-        toutes_palettes = self.palettes.copy()
-        toutes_palettes.update(self.custom_palettes)
-        return toutes_palettes
-    
-    def obtenir_palette(self, nom):
-        """
-        Retourne une palette spécifique
-        """
-        toutes_palettes = self.obtenir_toutes_palettes()
-        return toutes_palettes.get(nom, None)
-    
-    def lister_palettes(self):
-        """
-        Affiche toutes les palettes disponibles
-        """
-        print("\n=== PALETTES PRÉDÉFINIES ===")
-        for nom, info in self.palettes.items():
-            print(f"• {nom}: {info['description']}")
-        
-        if self.custom_palettes:
-            print("\n=== PALETTES PERSONNALISÉES ===")
-            for nom, info in self.custom_palettes.items():
-                print(f"• {nom}: {info['description']}")
-    
-    def generer_palette_aleatoire(self, nb_couleurs=8):
-        """
-        Génère une palette aléatoire
-        """
-        import random
-        colors = []
-        for _ in range(nb_couleurs):
-            # Génère une couleur hex aléatoire
-            couleur = f"#{random.randint(0, 255):02x}{random.randint(0, 255):02x}{random.randint(0, 255):02x}"
-            colors.append(couleur.upper())
-        
-        yarn_colors = [f"Couleur {i+1}" for i in range(nb_couleurs)]
-        
-        return {
-            "colors": colors,
-            "description": "Palette générée aléatoirement",
-            "yarn_colors": yarn_colors,
-            "type": "générée"
-        }
-    
-    def creer_palette_degrade(self, couleur_debut, couleur_fin, nb_couleurs=8):
-        """
-        Crée une palette en dégradé entre deux couleurs
-        """
-        def hex_to_rgb(hex_color):
-            hex_color = hex_color.lstrip('#')
-            return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
-        
-        def rgb_to_hex(rgb):
-            return f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}".upper()
-        
-        rgb_debut = hex_to_rgb(couleur_debut)
-        rgb_fin = hex_to_rgb(couleur_fin)
-        
-        colors = []
-        for i in range(nb_couleurs):
-            ratio = i / (nb_couleurs - 1)
-            r = int(rgb_debut[0] + (rgb_fin[0] - rgb_debut[0]) * ratio)
-            g = int(rgb_debut[1] + (rgb_fin[1] - rgb_debut[1]) * ratio)
-            b = int(rgb_debut[2] + (rgb_fin[2] - rgb_debut[2]) * ratio)
-            colors.append(rgb_to_hex((r, g, b)))
-        
-        yarn_colors = [f"Dégradé {i+1}" for i in range(nb_couleurs)]
-        
-        return {
-            "colors": colors,
-            "description": f"Dégradé de {couleur_debut} à {couleur_fin}",
-            "yarn_colors": yarn_colors,
-            "type": "dégradé"
-        }
-    
-    def exporter_palette(self, nom, format="dict"):
-        """
-        Exporte une palette dans différents formats
-        """
-        palette = self.obtenir_palette(nom)
-        if not palette:
-            print(f"Palette '{nom}' non trouvée")
-            return None
-        
-        if format == "dict":
-            return palette
-        elif format == "colors_only":
-            return palette["colors"]
-        elif format == "css":
-            css = f"/* Palette {nom} */\n"
-            for i, color in enumerate(palette["colors"]):
-                css += f"--color-{i+1}: {color};\n"
-            return css
-        elif format == "json":
-            import json
-            return json.dumps({nom: palette}, indent=2)
+    PALETTES_COUVERTURE[nom] = {
+        "colors": couleurs,
+        "description": description,
+        "yarn_colors": noms_laines
+    }
+    print(f"Palette '{nom}' ajoutée!")
 
-# Exemple d'utilisation
-if __name__ == "__main__":
-    # Créer le gestionnaire de palettes
-    manager = PaletteManager()
-    
-    # Lister toutes les palettes
-    manager.lister_palettes()
-    
-    # Ajouter une palette personnalisée
-    manager.ajouter_palette_personnalisee(
-        "Ma Palette Perso",
-        ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7"],
-        "Ma palette personnalisée préférée",
-        ["Rouge Corail", "Turquoise", "Bleu Ciel", "Vert Menthe", "Jaune Pastel"]
-    )
-    
-    # Générer une palette aléatoire
-    palette_aleatoire = manager.generer_palette_aleatoire(6)
-    manager.custom_palettes["Aléatoire"] = palette_aleatoire
-    
-    # Créer un dégradé
-    palette_degrade = manager.creer_palette_degrade("#FF0000", "#0000FF", 5)
-    manager.custom_palettes["Dégradé Rouge-Bleu"] = palette_degrade
-    
-    # Afficher toutes les palettes
-    print("\n" + "="*50)
-    manager.lister_palettes()
-    
-    # Exporter une palette
-    print("\n=== EXPORT CSS ===")
-    css_export = manager.exporter_palette("Ma Palette Perso", "css")
-    print(css_export)
+def modifier_palette(nom, nouvelles_couleurs=None, nouvelle_description=None, nouveaux_noms=None):
+    """Modifie une palette existante"""
+    if nom in PALETTES_COUVERTURE:
+        if nouvelles_couleurs:
+            PALETTES_COUVERTURE[nom]["colors"] = nouvelles_couleurs
+        if nouvelle_description:
+            PALETTES_COUVERTURE[nom]["description"] = nouvelle_description
+        if nouveaux_noms:
+            PALETTES_COUVERTURE[nom]["yarn_colors"] = nouveaux_noms
+        print(f"Palette '{nom}' modifiée!")
+    else:
+        print(f"Palette '{nom}' non trouvée")
+
+def afficher_palettes():
+    """Affiche toutes les palettes"""
+    for nom, info in PALETTES_COUVERTURE.items():
+        print(f"\n{nom}:")
+        print(f"  Description: {info['description']}")
+        print(f"  Couleurs: {info['colors']}")
+        print(f"  Laines: {info['yarn_colors']}")
+
+# Exemples d'utilisation:
+
+# 1. Modifier la palette personnalisée
+modifier_palette("Palette Personnalisée", 
+                nouvelles_couleurs=["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD", "#98D8C8", "#F7DC6F"],
+                nouvelle_description="Ma palette personnalisée préférée",
+                nouveaux_noms=["Rouge Corail", "Turquoise", "Bleu Ciel", "Vert Menthe", "Jaune Pastel", "Violet Clair", "Aqua", "Jaune Doux"])
+
+# 2. Ajouter une nouvelle palette
+ajouter_palette("Coucher de Soleil Tropical",
+               ["#FF6B35", "#F7931E", "#FFD23F", "#06FFA5", "#118AB2", "#073B4C"],
+               "Couleurs vives tropicales",
+               ["Orange Vif", "Orange Doré", "Jaune Soleil", "Vert Tropical", "Bleu Océan", "Bleu Nuit"])
+
+# 3. Ajouter une palette tons neutres
+ajouter_palette("Neutres Modernes",
+               ["#F8F9FA", "#E9ECEF", "#DEE2E6", "#CED4DA", "#ADB5BD", "#6C757D", "#495057", "#343A40"],
+               "Palette de gris modernes",
+               ["Blanc Neige", "Gris Très Clair", "Gris Clair", "Gris Moyen", "Gris", "Gris Foncé", "Gris Anthracite", "Gris Charbon"])
+
+# Test - afficher toutes les palettes
+print("=== TOUTES LES PALETTES ===")
+afficher_palettes()
 
 
 # --- LISTE ÉTENDUE DES VILLES ---
