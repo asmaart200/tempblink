@@ -1503,18 +1503,12 @@ def page_project():
     
     # Barre de progression
     st.progress(progress_percentage / 100)
-    
+
     # Boutons d'action
     st.markdown("---")
-    col1, col2, col3 = st.columns([1,1,3])
+    col1, col2 = st.columns([1,3])
     
     with col1:
-        if st.button("🔄 Réinitialiser progression", type="secondary"):
-            st.session_state.progress_data = {}
-            st.success("Progression réinitialisée!")
-            st.rerun()
-    
-    with col2:
         if st.button("📊 Préparer export", type="secondary"):
             # Créer les données pour l'export
             export_data = []
@@ -1542,7 +1536,12 @@ def page_project():
                 file_name=f"couverture_{project['city'].replace(', ', '_')}_{project['year']}.csv",
                 mime="text/csv"
             )
-    with col3:
+        if st.button("🔄 Réinitialiser progression", type="secondary"):
+            st.session_state.progress_data = {}
+            st.success("Progression réinitialisée!")
+            st.rerun()
+            
+    with col2:
         if st.button("🎨 Aperçu simple", type="secondary"):
             st.subheader("👀 Aperçu couleurs continues (un jour = une ligne)")
     
